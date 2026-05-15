@@ -1,0 +1,196 @@
+/* ─── Google Fonts ───────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── Design Tokens: Dark Theme (default) ────────────────────────────────────── */
+:root {
+  /* Colors */
+  --color-bg-base:        #0a0d14;
+  --color-bg-surface:     #111827;
+  --color-bg-elevated:    #1a2235;
+  --color-bg-overlay:     #1e2d45;
+
+  --color-border:         rgba(255, 255, 255, 0.08);
+  --color-border-strong:  rgba(255, 255, 255, 0.16);
+
+  --color-text-primary:   #f0f4ff;
+  --color-text-secondary: #8b99b5;
+  --color-text-muted:     #4a5568;
+
+  --color-accent:         #3b82f6;
+  --color-accent-hover:   #60a5fa;
+  --color-accent-dim:     rgba(59, 130, 246, 0.15);
+
+  --color-success:        #10b981;
+  --color-success-dim:    rgba(16, 185, 129, 0.15);
+
+  --color-danger:         #ef4444;
+  --color-danger-dim:     rgba(239, 68, 68, 0.15);
+
+  --color-warning:        #f59e0b;
+  --color-warning-dim:    rgba(245, 158, 11, 0.15);
+
+  --color-up:             #10b981;   /* price going up */
+  --color-down:           #ef4444;   /* price going down */
+  --color-flat:           #8b99b5;
+
+  /* Chart palette */
+  --chart-color-1:        #3b82f6;
+  --chart-color-2:        #10b981;
+  --chart-color-3:        #f59e0b;
+  --chart-color-4:        #8b5cf6;
+  --chart-color-5:        #ec4899;
+
+  /* Spacing */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 14px;
+  --text-md:   16px;
+  --text-lg:   18px;
+  --text-xl:   22px;
+  --text-2xl:  28px;
+
+  /* Radius */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6);
+  --glow-accent: 0 0 16px rgba(59, 130, 246, 0.25);
+
+  /* Transitions */
+  --transition-fast:   150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow:   400ms ease;
+
+  /* Layout */
+  --topbar-height:  56px;
+  --sidebar-width:  240px;
+}
+
+/* ─── Light Theme ────────────────────────────────────────────────────────────── */
+[data-theme='light'] {
+  --color-bg-base:        #f0f4f8;
+  --color-bg-surface:     #ffffff;
+  --color-bg-elevated:    #f8fafc;
+  --color-bg-overlay:     #edf2f7;
+
+  --color-border:         rgba(0, 0, 0, 0.08);
+  --color-border-strong:  rgba(0, 0, 0, 0.16);
+
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted:     #94a3b8;
+
+  --color-accent-dim:     rgba(59, 130, 246, 0.10);
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.12);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.15);
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* ─── Utility classes ────────────────────────────────────────────────────────── */
+.text-up   { color: var(--color-up); }
+.text-down { color: var(--color-down); }
+.text-flat { color: var(--color-flat); }
+
+.text-primary   { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-muted     { color: var(--color-text-muted); }
+.text-accent    { color: var(--color-accent); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-sm   { font-size: var(--text-sm); }
+.font-xs   { font-size: var(--text-xs); }
+
+.surface {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.elevated {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* ─── Severity badges ────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-low    { background: var(--color-accent-dim);   color: var(--color-accent); }
+.badge-medium { background: var(--color-warning-dim);  color: var(--color-warning); }
+.badge-high   { background: var(--color-danger-dim);   color: var(--color-danger); }
+.badge-system { background: var(--color-bg-overlay);   color: var(--color-text-secondary); }
+
+/* ─── Pulse animation for live indicator ─────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* ─── Fade-in for new feed items ─────────────────────────────────────────────── */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-slide-in { animation: fadeSlideIn 200ms ease forwards; }
+
+/* ─── Responsive breakpoints (CSS only, no JS needed for layout) ─────────────── */
+/* Mobile:  < 768px  → single column                   */
+/* Tablet:  768-1279 → stacked layout                  */
+/* Desktop: ≥ 1280px → full grid                       */
