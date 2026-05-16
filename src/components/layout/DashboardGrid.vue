@@ -63,20 +63,27 @@
 
 /* Tablet: stack feed below charts */
 @media (max-width: 1279px) {
+  .dashboard-grid {
+    height: auto;
+  }
+
   .grid-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .grid-charts {
+    overflow-y: visible;
   }
 
   .grid-feed {
-    max-height: 300px;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
 /* Mobile: full single column */
 @media (max-width: 767px) {
-  .grid-body {
-    grid-template-columns: 1fr;
-  }
+  /* Handled by tablet flex-column */
 }
 </style>

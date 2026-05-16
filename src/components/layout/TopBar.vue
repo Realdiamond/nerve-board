@@ -191,10 +191,18 @@ const uiStore = useUIStore()
   background: var(--color-accent-dim);
 }
 
-/* Mobile: hide symbol tabs */
+/* Mobile adjustments */
 @media (max-width: 767px) {
-  .symbol-tabs { display: none; }
-  .topbar { padding: 0 var(--space-4); }
+  .topbar { padding: 0 var(--space-3); gap: var(--space-2); }
+  .symbol-tabs { 
+    /* allow it to scroll horizontally on small screens */
+    margin: 0 var(--space-2);
+    mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent);
+  }
+  .symbol-tab { padding: var(--space-2); font-size: var(--text-xs); }
+  .brand-name { display: none; } /* Hide 'nerve-board' text to make room for tabs */
+  .brand-tag { display: none; } /* Hide 'LIVE' tag */
   .conn-label { display: none; }
 }
 </style>

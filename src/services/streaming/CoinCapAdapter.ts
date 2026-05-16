@@ -51,24 +51,18 @@ interface CoinCapAsset {
 
 // ── Adapter ──────────────────────────────────────────────────────────────────
 
-const COINCAP_WS = 'wss://ws.coincap.io/prices'
 const COINCAP_REST = 'https://rest.coincap.io/v3/assets'
 
 export class CoinCapAdapter extends StreamAdapter {
-  private ws: WebSocket | null = null
   private restTimer: ReturnType<typeof setInterval> | null = null
   private candleTimer: ReturnType<typeof setInterval> | null = null
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private reconnectAttempts = 0
+  private hasBackfilled = false
   private isPaused = false
-  private shouldReconnect = true
 
   private readonly slugs: string[]
   private readonly apiKey: string
   private readonly restPollMs: number
   private readonly candleMs: number
-  private readonly maxReconnect = 5
-  private readonly baseDelay = 2000
 
   // Candle state: one bucket per slug
   private candles: Map<string, CandleBucket> = new Map()
@@ -88,110 +82,26 @@ export class CoinCapAdapter extends StreamAdapter {
   // ── Connect ────────────────────────────────────────────────────────────────
 
   connect(): void {
-    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return
-
-    this.shouldReconnect = true
     this.emitStatus('connecting')
 
-    // 1. Open WebSocket for real-time price ticks (API key required)
-    const wsUrl = `${COINCAP_WS}?assets=${this.slugs.join(',')}&apiKey=${this.apiKey}`
-    console.info(`[CoinCap] Connecting WS: ${COINCAP_WS}?assets=${this.slugs.join(',')}&apiKey=***`)
+    console.info(`[CoinCap] Using REST Polling mode (WebSocket disabled by API tier)`)
+    
+    // Immediately "connect" via REST
+    this.emitStatus('connected')
 
-    try {
-      this.ws = new WebSocket(wsUrl)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.error(`[CoinCap] WS construction failed: ${msg}`)
-      this.emitError(new Error(msg))
-      this.emitStatus('error')
-      this.scheduleReconnect()
-      return
-    }
-
-    this.ws.onopen = () => {
-      console.info(`[CoinCap] WS connected ✓`)
-      this.reconnectAttempts = 0
-      this.emitStatus('connected')
-
-      // 2. Start REST polling for full asset data
-      this.startRestPolling()
-      // 3. Start candle bucket rotation
-      this.startCandleRotation()
-      // 4. Initial REST fetch immediately
-      this.fetchAssets()
-      // 5. Backfill 2h of real historical candles
+    // Start REST polling for price updates (this replaces the WS stream)
+    this.startRestPolling()
+    // Start candle bucket rotation
+    this.startCandleRotation()
+    // Initial REST fetch immediately
+    this.fetchAssets()
+    
+    // Backfill history ONCE only
+    if (!this.hasBackfilled) {
+      this.hasBackfilled = true
       this.backfillHistory()
     }
-
-    this.ws.onmessage = (event: MessageEvent) => {
-      if (this.isPaused) return
-      try {
-        const prices = JSON.parse(event.data as string) as Record<string, string>
-        this.handlePriceTick(prices)
-      } catch { /* ignore malformed */ }
-    }
-
-    this.ws.onerror = () => {
-      this.emitError(new Error('CoinCap WebSocket error'))
-      this.emitStatus('error')
-    }
-
-    this.ws.onclose = (event: CloseEvent) => {
-      if (this.isPaused) {
-        this.emitStatus('paused')
-        return
-      }
-
-      console.warn(`[CoinCap] WS closed: code=${event.code}`)
-      this.stopRestPolling()
-      this.stopCandleRotation()
-      this.emitStatus('disconnected')
-
-      if (this.shouldReconnect) {
-        this.scheduleReconnect()
-      }
-    }
   }
-
-  // ── Handle WS price tick ───────────────────────────────────────────────────
-  // CoinCap sends: { "bitcoin": "104231.42", "ethereum": "2503.11" }
-
-  private handlePriceTick(prices: Record<string, string>): void {
-    for (const [slug, priceStr] of Object.entries(prices)) {
-      const price = parseFloat(priceStr)
-      if (isNaN(price) || price <= 0) continue
-
-      const symbol = toSymbol(slug)
-      const now = Date.now()
-
-      // Update candle bucket
-      this.updateCandleBucket(slug, price, now)
-
-      // Emit a ticker update (merge with cached REST data if available)
-      const cached = this.lastAssetData.get(slug)
-      const openPrice = cached ? parseFloat(cached.priceUsd) || price : price
-      const changePercent = cached ? parseFloat(cached.changePercent24Hr ?? '0') : 0
-      const volume = cached ? parseFloat(cached.volumeUsd24Hr ?? '0') : 0
-
-      const ticker: TickerDTO = {
-        symbol,
-        lastPrice: price,
-        priceChange: price - openPrice,
-        priceChangePercent: changePercent,
-        highPrice: price,    // Will be enriched by REST poll
-        lowPrice: price,
-        volume: volume,
-        quoteVolume: volume,
-        openTime: 0,
-        closeTime: now,
-      }
-
-      // Emit as pre-parsed message
-      this.emitMessage({ _parsed: true, kind: 'ticker', data: ticker })
-    }
-  }
-
-  // ── Synthetic Candle Builder ───────────────────────────────────────────────
 
   private updateCandleBucket(slug: string, price: number, now: number): void {
     let bucket = this.candles.get(slug)
@@ -304,6 +214,7 @@ export class CoinCapAdapter extends StreamAdapter {
   // ── REST Polling for Full Asset Data ───────────────────────────────────────
 
   private async fetchAssets(): Promise<void> {
+    if (this.isPaused) return
     try {
       const url = `${COINCAP_REST}?ids=${this.slugs.join(',')}`
       const response = await fetch(url, {
@@ -339,7 +250,11 @@ export class CoinCapAdapter extends StreamAdapter {
           closeTime: Date.now(),
         }
 
+        // Emit ticker for the top cards
         this.emitMessage({ _parsed: true, kind: 'ticker', data: ticker })
+        
+        // Push this price directly into the candle bucket for the charts to update live!
+        this.updateCandleBucket(asset.id, lastPrice, Date.now())
       }
     } catch (err) {
       console.warn(`[CoinCap] REST fetch failed:`, err)
@@ -366,37 +281,11 @@ export class CoinCapAdapter extends StreamAdapter {
     if (this.candleTimer) { clearInterval(this.candleTimer); this.candleTimer = null }
   }
 
-  // ── Reconnect ──────────────────────────────────────────────────────────────
-
-  private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnect) {
-      console.error(`[CoinCap] Max reconnect attempts reached`)
-      this.emitStatus('failed')
-      return
-    }
-
-    const delay = Math.min(this.baseDelay * Math.pow(2, this.reconnectAttempts), 30_000)
-    this.reconnectAttempts++
-    console.info(`[CoinCap] Reconnecting in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnect})`)
-
-    this.reconnectTimer = setTimeout(() => {
-      if (this.shouldReconnect) this.connect()
-    }, delay)
-  }
-
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   disconnect(): void {
-    this.shouldReconnect = false
     this.stopRestPolling()
     this.stopCandleRotation()
-    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null }
-    if (this.ws) {
-      this.ws.onclose = null
-      this.ws.onerror = null
-      this.ws.close(1000, 'Client disconnect')
-      this.ws = null
-    }
     this.candles.clear()
     this.lastAssetData.clear()
     this.emitStatus('disconnected')
@@ -405,16 +294,14 @@ export class CoinCapAdapter extends StreamAdapter {
   pause(): void {
     this.isPaused = true
     this.stopRestPolling()
+    this.stopCandleRotation()
     this.emitStatus('paused')
   }
 
   resume(): void {
     this.isPaused = false
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.emitStatus('connected')
-      this.startRestPolling()
-    } else {
-      this.connect()
-    }
+    this.emitStatus('connected')
+    this.startRestPolling()
+    this.startCandleRotation()
   }
 }

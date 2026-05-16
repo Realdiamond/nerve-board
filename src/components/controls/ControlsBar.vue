@@ -49,7 +49,10 @@ import StreamControls from './StreamControls.vue'
 }
 
 @media (max-width: 767px) {
-  .controls-bar { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
-  .controls-right { display: none; }
+  .controls-bar { 
+    padding: var(--space-2) var(--space-3); 
+    gap: var(--space-3);
+    justify-content: flex-start; /* allow natural scrolling instead of spacing out */
+  }
 }
 </style>

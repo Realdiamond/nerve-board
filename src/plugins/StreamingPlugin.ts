@@ -102,23 +102,21 @@ export const StreamingPlugin = {
       console.info(`[StreamingPlugin] Symbols: ${symbols.join(', ')} → Slugs: ${slugs.join(', ')}`)
 
       const coinCapAdapter = new CoinCapAdapter({
-        url: 'wss://ws.coincap.io/prices',
+        url: 'wss://ws.coincap.io/prices', // Unused now but required by interface
         slugs,
         apiKey,
-        restPollIntervalMs: 10_000,
+        restPollIntervalMs: 2000,
         candleIntervalMs: 60_000,
       })
 
       // Monitor for total failure → switch to mock
-      let hasConnected = false
       coinCapAdapter.onStatus((status: StreamStatus) => {
-        if (status === 'connected') hasConnected = true
-        if (status === 'failed' && !hasConnected) {
+        if (status === 'failed') {
           console.warn(`[StreamingPlugin] CoinCap failed — switching to mock`)
           manager?.destroy()
           manager = new ConnectionManager()
           wireManager(manager)
-          startMock(manager, 'CoinCap connection failed')
+          startMock(manager, 'CoinCap WS unstable — switched to mock data')
         }
       })
 
